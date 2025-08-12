@@ -103,10 +103,10 @@
                 </div>
                 
                 <div class="quick-filters">
-                    <button class="quick-filter active" onclick="filterByCategory('all')">Tout</button>
-                    <button class="quick-filter" onclick="filterByCategory('Jupes')">Jupes</button>
-                    <button class="quick-filter" onclick="filterByCategory('Jeans')">Jeans</button>
-                    <button class="quick-filter" onclick="filterByCategory('Blouses')">Blouses</button>
+                    <button class="quick-filter active" onclick="filterByType('all')">Tout</button>
+                    <button class="quick-filter" onclick="filterByType('Skirt')">Jupes</button>
+                    <button class="quick-filter" onclick="filterByType('Pants')">Pantalons</button>
+                    <button class="quick-filter" onclick="filterByType('Shirt')">Chemises</button>
                 </div>
 
                 <div class="innerPage-body">
@@ -154,7 +154,7 @@
                 <div class="filter-sections">
                     <div class="filter-section">
                         <h4>Catégories</h4>
-                        <div id="category-filters" class="filter-chips"></div>
+                        <div id="type-filters" class="filter-chips"></div>
                     </div>
                     <div class="filter-section">
                         <h4>Couleurs</h4>
@@ -181,20 +181,35 @@
                 </div>
                 <form id="add-item-form" class="item-form">
                     <div class="form-group">
-                        <input type="text" id="item-name" placeholder="Nom du vêtement" required>
+                        <input type="text" id="item-title" placeholder="Nom du vêtement" required>
                     </div>
                     <div class="form-group">
-                        <select id="item-category" required>
+                        <select id="item-type" required>
                             <option value="">Choisir une catégorie</option>
-                            <option value="Jupes">Jupes</option>
-                            <option value="Shorts">Shorts</option>
-                            <option value="Jeans">Jeans</option>
-                            <option value="Blouses">Blouses</option>
-                            <option value="Chemises">Chemises</option>
+                            <option value="Coat">Manteau</option>
+                            <option value="Dress">Robe</option>
+                            <option value="Jacket">Veste</option>
+                            <option value="Pants">Pantalon</option>
+                            <option value="Shirt">Chemise</option>
+                            <option value="Skirt">Jupe</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <input type="text" id="item-color" placeholder="Couleur" required>
+                        <select id="item-color" required>
+                            <option value="">Choisir une couleur</option>
+                            <option value="Beige">Beige</option>
+                            <option value="Black">Noir</option>
+                            <option value="Blue">Bleu</option>
+                            <option value="Brown">Marron</option>
+                            <option value="Green">Vert</option>
+                            <option value="Grey">Gris</option>
+                            <option value="Orange">Orange</option>
+                            <option value="Pink">Rose</option>
+                            <option value="Purple">Violet</option>
+                            <option value="Red">Rouge</option>
+                            <option value="White">Blanc</option>
+                            <option value="Yellow">Jaune</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <select id="item-size" required>
@@ -206,10 +221,10 @@
                             <option value="XL">XL</option>
                         </select>
                     </div>
-                    <div class="form-group photo-group">
-                        <label class="photo-label">Photo (optionnel)</label>
-                        <input type="file" id="item-photo" accept="image/*" capture="environment">
-                        <div id="photo-preview" class="photo-preview"></div>
+                    <div class="form-group image-group">
+                        <label class="image-label">Photo (optionnel)</label>
+                        <input type="file" id="item-image" accept="image/*" capture="environment">
+                        <div id="image-preview" class="image-preview"></div>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" onclick="closeAddItemModal()">Annuler</button>
@@ -228,21 +243,36 @@
                 </div>
                 <form id="edit-item-form" class="item-form">
                     <div class="form-group">
-                        <input type="text" id="edit-item-name" placeholder="Nom du vêtement" required>
+                        <input type="text" id="edit-item-title" placeholder="Nom du vêtement" required>
                         <input type="hidden" id="edit-item-id" placeholder="id">
                     </div>
                     <div class="form-group">
-                        <select id="edit-item-category" required>
+                        <select id="edit-item-type" required>
                             <option value="">Choisir une catégorie</option>
-                            <option value="Jupes">Jupes</option>
-                            <option value="Shorts">Shorts</option>
-                            <option value="Jeans">Jeans</option>
-                            <option value="Blouses">Blouses</option>
-                            <option value="Chemises">Chemises</option>
+                            <option value="Coat">Manteau</option>
+                            <option value="Dress">Robe</option>
+                            <option value="Jacket">Veste</option>
+                            <option value="Pants">Pantalon</option>
+                            <option value="Shirt">Chemise</option>
+                            <option value="Skirt">Jupe</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <input type="text" id="edit-item-color" placeholder="Couleur" required>
+                        <select id="item-color" required>
+                            <option value="">Choisir une couleur</option>
+                            <option value="Beige">Beige</option>
+                            <option value="Black">Noir</option>
+                            <option value="Blue">Bleu</option>
+                            <option value="Brown">Marron</option>
+                            <option value="Green">Vert</option>
+                            <option value="Grey">Gris</option>
+                            <option value="Orange">Orange</option>
+                            <option value="Pink">Rose</option>
+                            <option value="Purple">Violet</option>
+                            <option value="Red">Rouge</option>
+                            <option value="White">Blanc</option>
+                            <option value="Yellow">Jaune</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <select id="edit-item-size" required>
@@ -254,10 +284,10 @@
                             <option value="XL">XL</option>
                         </select>
                     </div>
-                    <div class="form-group photo-group">
-                        <label class="photo-label">Photo (optionnel)</label>
-                        <input type="file" id="edit-item-photo" accept="image/*" capture="environment">
-                        <div id="edit-photo-preview" class="photo-preview"></div>
+                    <div class="form-group image-group">
+                        <label class="image-label">Photo (optionnel)</label>
+                        <input type="file" id="edit-item-image" accept="image/*" capture="environment">
+                        <div id="edit-image-preview" class="image-preview"></div>
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" onclick="closeEditItemModal()">Annuler</button>

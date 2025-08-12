@@ -5,18 +5,22 @@ const API_CONFIG = {
     entityId: 'light.headlight'
 };
 
-const host = window.location.hostname;
-API_CONFIG.baseUrl = `http://${host}:5080/items`;
-API_CONFIG.ordersUrl = `http://${host}:5080/orders`;
-API_CONFIG.planifierUrl = `http://${host}:5080/outfits`;
-API_CONFIG.tagUrl = `http://${host}:5080/tag`;
-API_CONFIG.photoUrl = `http://${host}:5080/`;
+let host = window.location.hostname;
+if (!host) {
+    host = "localhost";
+}
+
+API_CONFIG.baseUrl = `http://${host}:8000/items/`;
+API_CONFIG.ordersUrl = `http://${host}:8000/orders/`;
+API_CONFIG.planifierUrl = `http://${host}:8000/outfits/`;
+API_CONFIG.tagUrl = `http://${host}:8000/tags/`;
+API_CONFIG.imageUrl = ``;
 
 // State Management
 let clothingItems = [];
 let cart = [];
 let activeFilters = {
-    categories: [],
+    types: [],
     colors: [],
     search: ''
 };
@@ -79,7 +83,8 @@ async function loadItems() {
     try {
         const response = await fetch(API_CONFIG.baseUrl);
         if (response.ok) {
-            clothingItems = await response.json();
+            const data = await response.json();
+            clothingItems = data.results;
         } else {
             showToast('Erreur de chargement');
         }
@@ -135,7 +140,7 @@ function handleSearch() {
     displayItems();
 }
 
-function filterByCategory(category) {
+function filterByType(type) {
     // Update quick filter buttons
     document.querySelectorAll('.quick-filter').forEach(btn => {
         btn.classList.remove('active');
@@ -143,10 +148,10 @@ function filterByCategory(category) {
     event.target.classList.add('active');
     
     // Apply filter
-    if (category === 'all') {
-        activeFilters.categories = [];
+    if (type === 'all') {
+        activeFilters.types = [];
     } else {
-        activeFilters.categories = [category];
+        activeFilters.types = [type];
     }
     displayItems();
 }
@@ -160,21 +165,21 @@ function closeFilters() {
 }
 
 function buildFilterOptions() {
-    const categories = {};
+    const types = {};
     const colors = {};
     
     clothingItems.forEach(item => {
-        categories[item.category] = (categories[item.category] || 0) + 1;
+        types[item.type] = (types[item.type] || 0) + 1;
         colors[item.color] = (colors[item.color] || 0) + 1;
     });
-    
-    // Build category filters
-    const categoryFilters = document.getElementById('category-filters');
-    categoryFilters.innerHTML = Object.keys(categories)
-        .map(category => `
-            <div class="filter-chip ${activeFilters.categories.includes(category) ? 'active' : ''}" 
-                 onclick="toggleFilter('categories', '${category}')">
-                ${category}
+
+    // Build type filters
+    const typeFilters = document.getElementById('type-filters');
+    typeFilters.innerHTML = Object.keys(types)
+        .map(type => `
+            <div class="filter-chip ${activeFilters.types.includes(type) ? 'active' : ''}" 
+                 onclick="toggleFilter('types', '${type}')">
+                ${type}
             </div>
         `).join('');
     
@@ -206,7 +211,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-    activeFilters = { categories: [], colors: [], search: '' };
+    activeFilters = { types: [], colors: [], search: '' };
     document.getElementById('search-input').value = '';
     buildFilterOptions();
     displayItems();
@@ -232,15 +237,15 @@ function getColorHex(colorName) {
     return colorMap[colorName] || '#DDD';
 }
 
-function getEmojiForCategory(category) {
+function getEmojiForType(type) {
     const emojiMap = {
-        'Jupes': '👗',
-        'Shorts': '🩳',
+        'Skirt': '👗',
+        'Short': '🩳',
         'Jeans': '👖',
-        'Blouses': '👚',
-        'Chemises': '👔'
+        'Blouse': '👚',
+        'Shirt': '👔'
     };
-    return emojiMap[category] || '👕';
+    return emojiMap[type] || '👕';
 }
 
 // Item Display
@@ -253,16 +258,16 @@ function displayItems() {
         // Apply search filter
         if (activeFilters.search) {
             filteredItems = filteredItems.filter(item => 
-                item.name.toLowerCase().includes(activeFilters.search) ||
-                item.category.toLowerCase().includes(activeFilters.search) ||
+                item.title.toLowerCase().includes(activeFilters.search) ||
+                item.type.toLowerCase().includes(activeFilters.search) ||
                 item.color.toLowerCase().includes(activeFilters.search)
             );
         }
-        
-        // Apply category filter
-        if (activeFilters.categories.length > 0) {
+
+        // Apply type filter
+        if (activeFilters.types.length > 0) {
             filteredItems = filteredItems.filter(item => 
-                activeFilters.categories.includes(item.category)
+                activeFilters.types.includes(item.type)
             );
         }
         
@@ -286,9 +291,9 @@ function displayItems() {
         
         grid.innerHTML = filteredItems.map(item => {
             const inCart = isInCart(item.id);
-            const imageContent = item.photo 
-                ? `<img src="${API_CONFIG.photoUrl}${item.photo}" alt="${item.name}">`
-                : `<div class="item-placeholder">${item.category.charAt(0)}</div>`;
+            const imageContent = item.image
+                ? `<img src="${API_CONFIG.imageUrl}${item.image}" alt="${item.title}">`
+                : `<div class="item-placeholder">${item.type.charAt(0)}</div>`;
             
             const cardClass = editMode ? 'item-card edit-mode' : deleteMode ? 'item-card delete-mode' : 'item-card';
             const cardClick = editMode ? `editItem('${item.id}')` : deleteMode ? '' : '';
@@ -298,8 +303,8 @@ function displayItems() {
                     <button class="delete-btn ${deleteMode ? 'show' : ''}" onclick="deleteItem('${item.id}'); event.stopPropagation();">×</button>
                     <div class="item-image">${imageContent}</div>
                     <div class="item-info">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-details">${item.category} • ${item.color} • ${item.size}</div>
+                        <div class="item-title">${item.title}</div>
+                        <div class="item-details">${item.type} • ${item.color} • ${item.size}</div>
                         <div class="item-buttons">
                             <button class="add-btn" ${inCart ? 'disabled' : ''} onclick="addToCart('${item.id}'); event.stopPropagation();">
                                 ${inCart ? 'Ajouté' : 'Ajouter'}
@@ -330,7 +335,7 @@ function addToCart(itemId) {
         cart.push(item);
         updateCartBadge();
         displayItems();
-        //showToast(`${item.name} ajouté au panier`);
+        //showToast(`${item.title} ajouté au panier`);
         
         // Haptic feedback on mobile
         if (navigator.vibrate) {
@@ -347,7 +352,7 @@ function removeFromCart(itemId) {
         updateCartDisplay();
         updateCartBadge();
         displayItems();
-        //showToast(`${item.name} retiré du panier`);
+        //showToast(`${item.title} retiré du panier`);
     }
 }
 
@@ -385,16 +390,16 @@ function updateCartDisplay() {
         cartActions.style.display = 'block';
         
         cartItems.innerHTML = cart.map(item => {
-            const imageContent = item.photo 
-                ? `<img src="${API_CONFIG.photoUrl}${item.photo}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">`
-                : `<div class="item-placeholder">${item.category.charAt(0)}</div>`;
+            const imageContent = item.image 
+                ? `<img src="${API_CONFIG.imageUrl}${item.image}" alt="${item.title}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">`
+                : `<div class="item-placeholder">${item.type.charAt(0)}</div>`;
             
             return `
                 <div class="cart-item">
                     <div class="cart-item-image">${imageContent}</div>
                     <div class="cart-item-info">
-                        <div class="cart-item-name">${item.name}</div>
-                        <div class="cart-item-details">${item.category} • ${item.color}</div>
+                        <div class="cart-item-title">${item.title}</div>
+                        <div class="cart-item-details">${item.type} • ${item.color}</div>
                     </div>
                     <button class="remove-btn" onclick="removeFromCart('${item.id}')">×</button>
                 </div>
@@ -495,7 +500,7 @@ function showAddItemModal() {
 function closeAddItemModal() {
     document.getElementById('add-item-modal').classList.remove('show');
     document.getElementById('add-item-form').reset();
-    document.getElementById('photo-preview').innerHTML = '';
+    document.getElementById('image-preview').innerHTML = '';
 }
 
 function editItem(itemId) {
@@ -505,13 +510,13 @@ function editItem(itemId) {
     if (item) {
         editingItemId = itemId;
         document.getElementById('edit-item-id').value = item.id;
-        document.getElementById('edit-item-name').value = item.name;
-        document.getElementById('edit-item-category').value = item.category;
+        document.getElementById('edit-item-title').value = item.title;
+        document.getElementById('edit-item-type').value = item.type;
         document.getElementById('edit-item-color').value = item.color;
         
-        const preview = document.getElementById('edit-photo-preview');
-        if (item.photo) {
-            preview.innerHTML = `<img src="${API_CONFIG.photoUrl}${item.photo}" alt="Preview" style="max-width: 100px; border-radius: 8px;">`;
+        const preview = document.getElementById('edit-image-preview');
+        if (item.image) {
+            preview.innerHTML = `<img src="${API_CONFIG.imageUrl}${item.image}" alt="Preview" style="max-width: 100px; border-radius: 8px;">`;
         } else {
             preview.innerHTML = '';
         }
@@ -523,7 +528,7 @@ function editItem(itemId) {
 function closeEditItemModal() {
     document.getElementById('edit-item-modal').classList.remove('show');
     document.getElementById('edit-item-form').reset();
-    document.getElementById('edit-photo-preview').innerHTML = '';
+    document.getElementById('edit-image-preview').innerHTML = '';
     editingItemId = null;
 }
 
@@ -552,14 +557,14 @@ async function deleteItem(itemId) {
     const item = clothingItems.find(i => i.id === itemId);
     if (!item) return;
     
-    if (confirm(`Êtes-vous sûr de vouloir supprimer "${item.name}" ?`)) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer "${item.title}" ?`)) {
         try {
             const response = await fetch(`${API_CONFIG.baseUrl}/${itemId}`, {
                 method: 'DELETE'
             });
             
             if (response.ok) {
-                showToast(`${item.name} supprimé`);
+                showToast(`${item.title} supprimé`);
                 await loadItems();
                 buildFilterOptions();
                 
@@ -584,17 +589,17 @@ async function deleteItem(itemId) {
 async function addNewItem(event) {
     event.preventDefault();
     
-    const name = document.getElementById('item-name').value;
-    const category = document.getElementById('item-category').value;
+    const title = document.getElementById('item-title').value;
+    const type = document.getElementById('item-type').value;
     const color = document.getElementById('item-color').value;
-    const photoFile = document.getElementById('item-photo').files[0];
+    const imageFile = document.getElementById('item-image').files[0];
     
     const newItem = {
-        name: name,
-        category: category,
-        emoji: getEmojiForCategory(category),
+        title: title,
+        type: type,
+        emoji: getEmojiForType(type),
         color: color,
-        photo: photoFile ? await fileToBase64(photoFile) : null
+        image: imageFile ? await fileToBase64(imageFile) : null
     };
     
     try {
@@ -609,7 +614,7 @@ async function addNewItem(event) {
             buildFilterOptions();
             closeAddItemModal();
             displayItems();
-            showToast(`${name} ajouté au catalogue`);
+            showToast(`${title} ajouté au catalogue`);
         } else {
             showToast('Erreur lors de l\'ajout');
         }
@@ -623,17 +628,17 @@ async function updateItem(event) {
     event.preventDefault();
     if (!editingItemId) return;
     
-    const name = document.getElementById('edit-item-name').value;
-    const category = document.getElementById('edit-item-category').value;
+    const title = document.getElementById('edit-item-title').value;
+    const type = document.getElementById('edit-item-type').value;
     const color = document.getElementById('edit-item-color').value;
-    const photoFile = document.getElementById('edit-item-photo').files[0];
+    const imageFile = document.getElementById('edit-item-image').files[0];
     
     const updatedItem = {
-        name: name,
-        category: category,
-        emoji: getEmojiForCategory(category),
+        title: title,
+        type: type,
+        emoji: getEmojiForType(type),
         color: color,
-        photo: photoFile ? await fileToBase64(photoFile) : null
+        image: imageFile ? await fileToBase64(imageFile) : null
     };
     
     try {
@@ -656,7 +661,7 @@ async function updateItem(event) {
             
             closeEditItemModal();
             displayItems();
-            showToast(`${name} modifié`);
+            showToast(`${title} modifié`);
         } else {
             showToast('Erreur lors de la modification');
         }
@@ -767,14 +772,14 @@ function displayOrderHistory(orders) {
             });
             
             const itemsHtml = order.items.map(item => {
-                const imageContent = item.photo 
-                    ? `<img src="${API_CONFIG.photoUrl}${item.photo}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">`
-                    : `<div class="item-placeholder">${item.category.charAt(0)}</div>`;
+                const imageContent = item.image
+                    ? `<img src="${API_CONFIG.imageUrl}${item.image}" alt="${item.title}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">`
+                    : `<div class="item-placeholder">${item.type.charAt(0)}</div>`;
                 
                 return `
                     <div class="order-item-card">
                         <div class="order-item-image">${imageContent}</div>
-                        <span>${item.name}</span>
+                        <span>${item.title}</span>
                     </div>
                 `;
             }).join('');
@@ -898,10 +903,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('edit-item-form').addEventListener('submit', updateItem);
     //document.getElementById('planifier-form').addEventListener('submit', submitPlanifierForm);
     
-    // Photo preview handlers
-    document.getElementById('item-photo').addEventListener('change', function(e) {
+    // Image preview handlers
+    document.getElementById('item-image').addEventListener('change', function(e) {
         const file = e.target.files[0];
-        const preview = document.getElementById('photo-preview');
+        const preview = document.getElementById('image-preview');
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -913,9 +918,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    document.getElementById('edit-item-photo').addEventListener('change', function(e) {
+    document.getElementById('edit-item-image').addEventListener('change', function(e) {
         const file = e.target.files[0];
-        const preview = document.getElementById('edit-photo-preview');
+        const preview = document.getElementById('edit-image-preview');
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -974,7 +979,7 @@ async function getPlanifierEvents() {
             outfits.forEach(outfit => {
                 planifierEvents.push({
                     id: outfit.id,
-                    nom: outfit.name,
+                    nom: outfit.title,
                     desc: outfit.description || '',
                     date: outfit.date || '',
                     items: outfit.items || [],
@@ -1081,7 +1086,7 @@ function renderPlanifier() {
                     html += tenue.items.map(itemId=>{
                         const item = clothingItems.find(i=>i.id===itemId);
                         if(!item) return '';
-                        return `<div class='planifier-item'>${item.name} <button onclick='removeItemFromEvent(${tenue.id},"${itemId}");event.stopPropagation();' style='margin-left:8px;'>×</button></div>`;
+                        return `<div class='planifier-item'>${item.title} <button onclick='removeItemFromEvent(${tenue.id},"${itemId}");event.stopPropagation();' style='margin-left:8px;'>×</button></div>`;
                     }).join('');
                 }
                 html += `<button class='btn-primary' style='margin-top:10px;' onclick='event.stopPropagation();showCatalogueForEvent(${tenue.id})'>Ajouter/modifier les vêtements</button></div>`;
@@ -1117,20 +1122,20 @@ function openPlanifierForm(id=null){
     if(clothingItems.length === 0){
         html += '<div style="color:#888;">Aucun vêtement dans le catalogue</div>';
     }else{
-        const categories = {};
+        const types = {};
         clothingItems.forEach(item => {
-            if (!categories[item.category]) categories[item.category] = [];
-            categories[item.category].push(item);
+            if (!types[item.type]) types[item.type] = [];
+            types[item.type].push(item);
         });
         html += '<div style="max-height:180px;overflow:auto;">';
-        Object.keys(categories).forEach(cat => {
-            html += `<div style='margin-bottom:10px;'><div style='font-weight:600;margin-bottom:4px;'>${cat}</div><div style='display:flex;flex-wrap:wrap;gap:8px;'>`;
-            categories[cat].forEach(item => {
+        Object.keys(types).forEach(type => {
+            html += `<div style='margin-bottom:10px;'><div style='font-weight:600;margin-bottom:4px;'>${type}</div><div style='display:flex;flex-wrap:wrap;gap:8px;'>`;
+            types[type].forEach(item => {
                 html += `
                     <label style='display:flex;flex-direction:column;align-items:center;width:90px;cursor:pointer;'>
                         <input type='checkbox' name='planifier-items' value='${item.id}' ${selectedItems.includes(item.id)?'checked':''} style='margin-bottom:4px;'>
-                        ${item.photo ? `<img src='${API_CONFIG.photoUrl}${item.photo}' alt='${item.name}' style='width:70px;height:70px;object-fit:cover;border-radius:8px;margin-bottom:4px;'>` : `<div style='width:70px;height:70px;background:#eee;border-radius:8px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;'>${item.category.charAt(0)}</div>`}
-                        <span style='font-size:13px;text-align:center;'>${item.name}</span>
+                        ${item.image ? `<img src='${API_CONFIG.imageUrl}${item.image}' alt='${item.title}' style='width:70px;height:70px;object-fit:cover;border-radius:8px;margin-bottom:4px;'>` : `<div style='width:70px;height:70px;background:#eee;border-radius:8px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;'>${item.type.charAt(0)}</div>`}
+                        <span style='font-size:13px;text-align:center;'>${item.title}</span>
                     </label>
                 `;
             });
@@ -1184,7 +1189,7 @@ async function submitPlanifierForm(e){
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                name:nom,
+                title:nom,
                 description:desc,
                 date:date,
                 items : checked
